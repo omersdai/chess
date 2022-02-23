@@ -40,7 +40,6 @@ function startGame() {
   isWhiteTurn = true;
   clearBoard();
   placePieces();
-  console.log(chess);
 }
 
 function movePiece(pieceEl, x2, y2) {
@@ -64,9 +63,12 @@ function movePiece(pieceEl, x2, y2) {
 
   pieceEl.setAttribute('row', x2);
   pieceEl.setAttribute('col', y2);
+
+  printBoard();
 }
 
 function capturePiece(x, y) {
+  chess[x][y] = null;
   const piece = chessBoard[x][y].firstChild;
   if (piece) piece.remove();
 }
@@ -115,6 +117,8 @@ function isLegalMove(x1, y1, x2, y2) {
       }
       break;
     case BISHOP:
+      console.log('ses');
+      return legalBishopMove(x1, y1, x2, y2);
       break;
     case QUEEN:
       return legalRookMove(x1, y1, x2, y2) || legalBishopMove(x1, y1, x2, y2);
@@ -122,7 +126,6 @@ function isLegalMove(x1, y1, x2, y2) {
     case KING:
       break;
   }
-
   return false;
 }
 
@@ -146,6 +149,28 @@ function legalRookMove(x1, y1, x2, y2) {
 }
 
 function legalBishopMove(x1, y1, x2, y2) {
+  let rowStart, rowEnd, colStart;
+
+  if (x1 < x2) {
+    rowStart = x1;
+    rowEnd = x2;
+    colStart = y1;
+  } else {
+    rowStart = x2;
+    rowEnd = x1;
+    colStart = y2;
+  }
+  if (x1 - y1 === x2 - y2) {
+    for (let i = 1; rowStart + i < rowEnd; i++) {
+      if (chess[rowStart + i][colStart + i]) return false;
+    }
+    return true;
+  } else if (x1 + y1 === x2 + y2) {
+    for (let i = 1; rowStart + i < rowEnd; i++) {
+      if (chess[rowStart + i][colStart - i]) return false;
+    }
+    return true;
+  }
   return false;
 }
 
@@ -226,6 +251,12 @@ function initiliazeGame() {
     chessBoard.push(arr);
   }
   startGame();
+}
+
+function printBoard() {
+  for (const row of chess) {
+    console.log(row.map((piece) => (piece ? piece.type : 'null')));
+  }
 }
 
 //////////////////

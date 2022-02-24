@@ -55,15 +55,13 @@ function movePiece(pieceEl, to) {
   const [x2, y2] = getCoor(to);
   const { board } = chessGame;
   const { color, moves } = board[x1][y1];
+  if ((color === WHITE) === isWhiteTurn) return;
   const move = moves[to];
 
   if (!move) return; // illegal move
 
   isWhiteTurn = !isWhiteTurn;
-  chessGame = {
-    enPassant: moves.enPassant,
-    board: move.chess.board,
-  };
+  chessGame = move.chess;
   chessGame.board[x2][y2].hasMoved = true;
   const { check, capturedPiece, enemyMoves } = move;
   console.log(from, to, check, capturedPiece, chessGame.enPassant);
@@ -77,17 +75,7 @@ function movePiece(pieceEl, to) {
   square.innerHTML = '';
   square.appendChild(pieceEl);
   pieceEl.setAttribute('square', to);
-  console.log(chessGame.board);
-}
-
-function setEnPassant(from, to, board) {
-  const [x1, y1] = getCoor(from);
-  const [x2, y2] = getCoor(to);
-  const { type, color, hasMoved } = board[x1][y1];
-  const dir = color === WHITE ? -1 : 1;
-  return type === PAWN && !hasMoved && y1 === y2 && x1 + dir * 2 === x2
-    ? { x: x1 + dir, y: y1, pawnIdx: to }
-    : null;
+  console.log(chessGame);
 }
 
 function simulateMoves(idx, legalMoves, chess) {
@@ -111,6 +99,7 @@ function simulateMove(from, to, chess) {
   const capturedPiece = board[x2][y2];
   board[x1][y1] = null;
   board[x2][y2] = piece;
+  // TODO: CHECK SPECIAL MOVES LIKE EN PASSANT OR CASTLE
   const [allyPieces, enemyPieces] = collectPieces(piece.color, board);
 
   isChecking = false;
@@ -129,6 +118,16 @@ function simulateMove(from, to, chess) {
     capturedPiece,
     enemyMoves, // {idx => [legalMoves]}
   };
+}
+
+function setEnPassant(from, to, board) {
+  const [x1, y1] = getCoor(from);
+  const [x2, y2] = getCoor(to);
+  const { type, color, hasMoved } = board[x1][y1];
+  const dir = color === WHITE ? -1 : 1;
+  return type === PAWN && !hasMoved && y1 === y2 && x1 + dir * 2 === x2
+    ? { x: x1 + dir, y: y1, pawnIdx: to }
+    : null;
 }
 
 // Computes possible legal moves for a chess piece
@@ -234,7 +233,7 @@ function computeKnightMoves(x, y, color, legalMoves, board) {
 
 function computeBishopMoves(x, y, color, legalMoves, board) {
   // Down Right
-  for (let i = 0; i < boardSize; i++) {
+  for (let i = 1; i < boardSize; i++) {
     if (valid(x + i, y + i, color, board)) {
       legalMoves.push(getIdx(x + i, y + i));
       if (board[x + i][y + i]) break;
@@ -243,7 +242,7 @@ function computeBishopMoves(x, y, color, legalMoves, board) {
     }
   }
   // Down Left
-  for (let i = 0; i < boardSize; i++) {
+  for (let i = 1; i < boardSize; i++) {
     if (valid(x + i, y - i, color, board)) {
       legalMoves.push(getIdx(x + i, y - i));
       if (board[x + i][y - i]) break;
@@ -252,7 +251,7 @@ function computeBishopMoves(x, y, color, legalMoves, board) {
     }
   }
   // Up Right
-  for (let i = 0; i < boardSize; i++) {
+  for (let i = 1; i < boardSize; i++) {
     if (valid(x - i, y + i, color, board)) {
       legalMoves.push(getIdx(x - i, y + i));
       if (board[x - i][y + i]) break;
@@ -261,7 +260,7 @@ function computeBishopMoves(x, y, color, legalMoves, board) {
     }
   }
   // Up Left
-  for (let i = 0; i < boardSize; i++) {
+  for (let i = 1; i < boardSize; i++) {
     if (valid(x - i, y - i, color, board)) {
       legalMoves.push(getIdx(x - i, y - i));
       if (board[x - i][y - i]) break;
@@ -292,7 +291,6 @@ function valid(x, y, color, board) {
 function validPawn(x, y, color, board, enPassant) {
   if (x < 0 || boardSize <= x || y < 0 || boardSize <= y) return false;
   const piece = board[x][y];
-  console.log(enPassant);
 
   if (piece && piece.type === KING && piece.color !== color) isChecking = true;
   return (
@@ -422,8 +420,8 @@ chessBoardEl.querySelectorAll('.square').forEach((square, idx) => {
     e.preventDefault();
     if (!draggedPiece) return;
     e.currentTarget.classList.remove('hover');
-    if ((draggedPiece.getAttribute('color') === WHITE) === isWhiteTurn)
-      movePiece(draggedPiece, idx);
+
+    movePiece(draggedPiece, idx);
   });
 
   // Dragging is not enabled by default

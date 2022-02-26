@@ -26,14 +26,42 @@ body {
 }
 
 .chess-board {
+  position: relative;
+
   i {
     font-size: 50px;
     background-color: transparent;
+    -webkit-text-stroke: 2px black;
   }
+
+  .promotion-container {
+    position: absolute;
+
+    background-color: rgb(241, 241, 241);
+    padding: 3px;
+    border-radius: 5px;
+
+    .square {
+      border: none;
+      @extend %btn;
+    }
+
+    &.promotion-white {
+      top: 0;
+      left: $boxSize * 4 - 3px;
+      i {
+        color: white;
+      }
+    }
+
+    &.promotion-black {
+      bottom: 0;
+    }
+  }
+
   .square {
     height: $boxSize;
     width: $boxSize;
-    background-color: $darkSquareColor;
 
     border: $border;
     @extend .flex-center;
@@ -43,15 +71,21 @@ body {
     }
   }
 
-  .row:nth-child(2n + 1) {
+  .row:nth-child(2n) {
     .square:nth-child(2n + 1) {
+      background-color: $darkSquareColor;
+    }
+    .square:nth-child(2n) {
       background-color: $lightSquareColor;
     }
   }
 
-  .row:nth-child(2n) {
-    .square:nth-child(2n) {
+  .row:nth-child(2n + 1) {
+    .square:nth-child(2n + 1) {
       background-color: $lightSquareColor;
+    }
+    .square:nth-child(2n) {
+      background-color: $darkSquareColor;
     }
   }
 }

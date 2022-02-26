@@ -1,31 +1,34 @@
 const chessBoardEl = document.getElementById('chessBoard');
+const promotionWhiteEl = document.getElementById('promotionWhite');
+const promotionBlackEl = document.getElementById('promotionBlack');
+
+promotionWhiteEl.querySelectorAll('.square').forEach((pieceEl) => {
+  pieceEl.addEventListener('click', (e) => {
+    console.log(e.currentTarget.getAttribute('type'));
+  });
+});
 
 const htmlBoard = [];
-const boardSize = 8;
-const [
-  PAWN,
-  ROOK,
-  KNIGHT,
-  BISHOP,
-  QUEEN,
-  KING,
-  WHITE,
-  BLACK,
-  EN_PASSANT,
-  QUEENSIDE_CASTLING,
-  KINGSIDE_CASTLING,
-] = [
+const boardSize = 8; // squares
+const boxSize = 80; // px
+
+// Piece Types
+const [PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING] = [
   'pawn',
   'rook',
   'knight',
   'bishop',
   'queen',
   'king',
-  'white',
-  'black',
+];
+// Piece colors
+const [WHITE, BLACK] = ['white', 'black'];
+// Special moves
+const [EN_PASSANT, QUEENSIDE_CASTLING, KINGSIDE_CASTLING, PROMOTION] = [
   'enPassant',
   'queensideCastling',
   'kingsideCastling',
+  'promotion',
 ];
 
 const PAWN_HTML = '<i class="fa-solid fa-chess-pawn" draggable="true"></i>';
@@ -49,6 +52,7 @@ const kingSideSquares = [getIdx(boardSize - 1, 5), getIdx(0, 5)];
 
 let draggedPiece;
 let isWhiteTurn;
+let isPromoting;
 let isChecking;
 let blockedQueenSide;
 let blockedKingSide;
@@ -62,9 +66,8 @@ function startGame() {
   blockedKingSide = false;
   clearBoard();
   placePieces();
-  const whitePieces = collectPieces(WHITE, chessGame.board)[0];
 
-  whitePieces.forEach((idx) => {
+  collectPieces(WHITE, chessGame.board).forEach((idx) => {
     const legalMoves = computeMoves(idx, chessGame);
     const [x, y] = getCoor(idx);
     chessGame.board[x][y].moves = simulateMoves(idx, legalMoves, chessGame);
@@ -83,31 +86,34 @@ function movePiece(pieceEl, to) {
   if (!move) return; // illegal move
 
   isWhiteTurn = !isWhiteTurn;
-  chessGame = move.chess;
-  const { check, capturedPiece, enemyMoves, specialMove } = move;
-
-  for (const [idx, legalMoves] of Object.entries(enemyMoves)) {
-    const [x, y] = getCoor(idx);
-    chessGame.board[x][y].moves = simulateMoves(idx, legalMoves, chessGame);
-  }
+  const { chess, capturedPiece, enemyLegalMovesMap, specialMove } = move;
+  chessGame = chess;
 
   movePieceEl(x2, y2, pieceEl);
+  moveSpecial(x2, y2, specialMove);
 
-  if (specialMove) {
-    const { type, pieceIdx } = specialMove;
-    const [x, y] = getCoor(pieceIdx);
-
-    if (type === EN_PASSANT) {
-      htmlBoard[x][y].innerHTML = '';
-    } else if (type === QUEENSIDE_CASTLING) {
-      const rookEl = htmlBoard[x][y].firstChild;
-      movePieceEl(x1, y1 - 1, rookEl);
-    } else if (type === KINGSIDE_CASTLING) {
-      const rookEl = htmlBoard[x][y].firstChild;
-      movePieceEl(x1, y1 + 1, rookEl);
-    }
-  }
   console.table(chessGame.board);
+
+  isChecking = false;
+  collectPieces(color, chess.board).forEach((idx) =>
+    computeMoves(idx, chessGame)
+  ); // check if enemy king is checked
+
+  if (isChecking) console.log('Check!!!');
+
+  let hasMoves = false;
+
+  for (const [idx, legalMoves] of Object.entries(enemyLegalMovesMap)) {
+    const [x, y] = getCoor(idx);
+    const eneyMoves = simulateMoves(idx, legalMoves, chessGame);
+    chessGame.board[x][y].moves = eneyMoves;
+    if (0 < Object.keys(eneyMoves).length) hasMoves = true;
+  }
+
+  if (!hasMoves) {
+    if (isChecking) console.log('Checkmate!!!');
+    else console.log('Stalemate lol');
+  }
 }
 
 function simulateMoves(idx, legalMoves, chess) {
@@ -131,14 +137,21 @@ function simulateMove(from, to, chess) {
   let specialMove = null;
   board[x1][y1] = null;
   board[x2][y2] = piece;
+  const { type, color } = piece;
 
-  if (piece.type === PAWN && y1 !== y2 && !capturedPiece) {
-    // En passant
-    const [x, y] = getCoor(enPassant.pawnIdx);
-    capturedPiece = board[x][y];
-    board[x][y] = null;
-    specialMove = { type: EN_PASSANT, pieceIdx: enPassant.pawnIdx };
-  } else if (piece.type === KING) {
+  if (type === PAWN) {
+    if (y1 !== y2 && !capturedPiece) {
+      // En passant
+
+      const [x, y] = getCoor(enPassant.pawnIdx);
+      capturedPiece = board[x][y];
+      board[x][y] = null;
+      specialMove = { type: EN_PASSANT, pieceIdx: enPassant.pawnIdx };
+    } else if (x2 === 0 || x2 === boardSize - 1) {
+      // Promotion
+      specialMove = { type: PROMOTION, pieceIdx: to };
+    }
+  } else if (type === KING) {
     if (y1 - 2 === y2) {
       // Queenside castling
       board[x1][y1 - 1] = board[x1][0];
@@ -154,15 +167,15 @@ function simulateMove(from, to, chess) {
       };
     }
   }
-  chessCopy.enPassant = setEnPassant(from, to, board); // needs to bet set before computing enemy moves
+  chessCopy.enPassant = setEnPassant(from, to, board); // needs to be set before computing enemy moves
 
-  const [allyPieces, enemyPieces] = collectPieces(piece.color, board);
   isChecking = false;
   blockedQueenSide = false;
   blockedKingSide = false;
-  const enemyMoves = {};
+  const enemyPieces = collectPieces(color === WHITE ? BLACK : WHITE, board);
+  const enemyLegalMovesMap = {};
   enemyPieces.forEach(
-    (idx) => (enemyMoves[idx] = computeMoves(idx, chessCopy))
+    (idx) => (enemyLegalMovesMap[idx] = computeMoves(idx, chessCopy))
   );
   if (
     isChecking ||
@@ -172,16 +185,12 @@ function simulateMove(from, to, chess) {
   )
     return null; // move not valid
 
-  isChecking = false;
-  allyPieces.forEach((idx) => computeMoves(idx, chessCopy)); // check if enemy king is checked
-
-  chessCopy.board[x2][y2].hasMoved = true;
+  piece.hasMoved = true;
 
   return {
     chess: chessCopy,
-    check: isChecking, // checking enemy king
     capturedPiece,
-    enemyMoves, // {idx => [legalMoves]}
+    enemyLegalMovesMap, // {idx => [legalMoves]}
     specialMove,
   };
 }
@@ -368,7 +377,7 @@ function computeKingMoves(x, y, color, hasMoved, legalMoves, board) {
   }
 }
 
-// Checks if a piece of a color can move to a square, stores isChecking
+// Checks if a piece of a color can move to a square
 function valid(x, y, color, board) {
   if (x < 0 || boardSize <= x || y < 0 || boardSize <= y) return false;
   const piece = board[x][y];
@@ -378,7 +387,7 @@ function valid(x, y, color, board) {
   return !piece || (piece.type !== KING && piece.color !== color);
 }
 
-// Special check for pawn moving diagonally, stores isChecking
+// Special check for pawn moving diagonally
 function validPawn(x, y, color, board, enPassant) {
   if (x < 0 || boardSize <= x || y < 0 || boardSize <= y) return false;
   const piece = board[x][y];
@@ -423,16 +432,14 @@ function createPiece(x, y, type, color) {
 
 function collectPieces(color, board) {
   const allyPieces = [];
-  const enemyPieces = [];
   for (let i = 0; i < boardSize; i++) {
     for (let j = 0; j < boardSize; j++) {
       if (board[i][j]) {
         if (board[i][j].color === color) allyPieces.push(getIdx(i, j));
-        else enemyPieces.push(getIdx(i, j));
       }
     }
   }
-  return [allyPieces, enemyPieces];
+  return allyPieces;
 }
 
 function clearBoard() {
@@ -481,6 +488,28 @@ function movePieceEl(x, y, pieceEl) {
   square.innerHTML = '';
   square.appendChild(pieceEl);
   pieceEl.setAttribute('square', getIdx(x, y));
+}
+
+function moveSpecial(x2, y2, specialMove) {
+  if (!specialMove) return;
+
+  const { type, pieceIdx } = specialMove;
+  const [x, y] = getCoor(pieceIdx);
+
+  if (type === EN_PASSANT) {
+    htmlBoard[x][y].innerHTML = '';
+  } else if (type === QUEENSIDE_CASTLING) {
+    const rookEl = htmlBoard[x][y].firstChild;
+    movePieceEl(x2, y2 + 1, rookEl);
+  } else if (type === KINGSIDE_CASTLING) {
+    const rookEl = htmlBoard[x][y].firstChild;
+    movePieceEl(x2, y2 - 1, rookEl);
+  } else if (type === PROMOTION) {
+    isPromoting = true;
+    const promotionContainer = x === 0 ? promotionWhiteEl : promotionBlackEl;
+    promotionContainer.classList.remove('hide');
+    promotionContainer.style.left = boxSize * y - 3 + 'px';
+  }
 }
 
 function initiliazeGame() {

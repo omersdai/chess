@@ -27,7 +27,9 @@ body {
 
 .chess-board {
   position: relative;
-
+  display: flex;
+  flex-direction: column;
+  // flex-direction: column-reverse;
   i {
     font-size: 50px;
     background-color: transparent;

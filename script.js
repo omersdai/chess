@@ -92,6 +92,7 @@ function movePiece(pieceEl, to) {
   chessGame = chess;
   isWhiteTurn = !isWhiteTurn;
   movePieceEl(x2, y2, pieceEl);
+  chessBoardEl.style.flexDirection = isWhiteTurn ? 'column' : 'column-reverse';
 
   if (capturedPiece) console.log(capturedPiece);
   console.table(chess.board);

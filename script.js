@@ -1,4 +1,5 @@
 const chessBoardEl = document.getElementById('chessBoard');
+const squares = chessBoardEl.querySelectorAll('.square');
 const promotionWhiteEl = document.getElementById('promotionWhite');
 const promotionBlackEl = document.getElementById('promotionBlack');
 
@@ -64,8 +65,8 @@ function startGame() {
   placePieces();
 
   collectPieces(startingColor, chessGame.board).forEach((idx) => {
-    const legalMoves = computeMoves(idx, chessGame);
     const [x, y] = getCoor(idx);
+    const legalMoves = computeMoves(idx, chessGame);
     chessGame.board[x][y].moves = simulateMoves(idx, legalMoves, chessGame);
   });
 }
@@ -84,15 +85,13 @@ function movePiece(pieceEl, to) {
   const { chess, capturedPiece, enemyLegalMovesMap, specialMove } = move;
 
   moveSpecial(x2, y2, specialMove);
-  if (isPromoting) {
-    console.log(move);
-    return;
-  }
+  if (isPromoting) return;
 
   chessGame = chess;
   isWhiteTurn = !isWhiteTurn;
   movePieceEl(x2, y2, pieceEl);
-  chessBoardEl.style.flexDirection = isWhiteTurn ? 'column' : 'column-reverse';
+  highlightMove(from, to);
+  // chessBoardEl.style.flexDirection = isWhiteTurn ? 'column' : 'column-reverse';
 
   if (capturedPiece) console.log(capturedPiece);
   console.table(chess.board);
@@ -156,11 +155,13 @@ function simulateMove(from, to, chess) {
   } else if (type === KING) {
     if (y1 - 2 === y2) {
       // Queenside castling
+      board[x1][0].hasMoved = true;
       board[x1][y1 - 1] = board[x1][0];
       board[x1][0] = null;
       specialMove = { type: QUEENSIDE_CASTLING, pieceIdx: getIdx(x1, 0) };
     } else if (y1 + 2 === y2) {
       // Kingside castling
+      board[x1][boardSize - 1].hasMoved = true;
       board[x1][y1 + 1] = board[x1][boardSize - 1];
       board[x1][boardSize - 1] = null;
       specialMove = {
@@ -457,9 +458,8 @@ function collectPieces(color, board) {
   const allyPieces = [];
   for (let i = 0; i < boardSize; i++) {
     for (let j = 0; j < boardSize; j++) {
-      if (board[i][j]) {
-        if (board[i][j].color === color) allyPieces.push(getIdx(i, j));
-      }
+      if (board[i][j] && board[i][j].color === color)
+        allyPieces.push(getIdx(i, j));
     }
   }
   return allyPieces;
@@ -535,6 +535,12 @@ function movePieceEl(x, y, pieceEl) {
   pieceEl.setAttribute('square', getIdx(x, y));
 }
 
+function highlightMove(from, to) {
+  squares.forEach((square) => square.classList.remove('highlight'));
+  squares[from].classList.add('highlight');
+  squares[to].classList.add('highlight');
+}
+
 function initiliazeGame() {
   for (const row of chessBoardEl.querySelectorAll('.row')) {
     const arr = [];
@@ -557,16 +563,18 @@ function dragEnd(e) {
   draggedPiece = null;
 }
 
-// For debugging purposes
+// TODO: Highlight available moves for the piece
 function onClick(e) {
   const pieceEl = e.currentTarget;
   const idx = pieceIdx(pieceEl);
-  const [x, y] = getCoor(idx);
-  const piece = chessGame.board[x][y];
-  console.log(simulateMoves(idx, computeMoves(idx, chessGame), chessGame));
+  const moves = simulateMoves(idx, computeMoves(idx, chessGame), chessGame);
+  squares.forEach((square) => square.classList.remove('highlight'));
+  Object.keys(moves).forEach((to) =>
+    squares[parseInt(to)].classList.add('highlight')
+  );
 }
 
-chessBoardEl.querySelectorAll('.square').forEach((square, idx) => {
+squares.forEach((square, idx) => {
   square.addEventListener('dragenter', (e) => {
     if (!draggedPiece) return;
     e.currentTarget.classList.add('hover');

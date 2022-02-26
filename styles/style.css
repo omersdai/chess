@@ -229,15 +229,31 @@ body {
   background-color: rgba(199, 10, 10, 0.781);
 }
 
+.chess-board .row:nth-child(2n) .square:nth-child(2n + 1).highlight {
+  background-color: rgba(199, 186, 10, 0.781);
+}
+
 .chess-board .row:nth-child(2n) .square:nth-child(2n) {
   background-color: #ee9879;
+}
+
+.chess-board .row:nth-child(2n) .square:nth-child(2n).highlight {
+  background-color: #dfe682;
 }
 
 .chess-board .row:nth-child(2n + 1) .square:nth-child(2n + 1) {
   background-color: #ee9879;
 }
 
+.chess-board .row:nth-child(2n + 1) .square:nth-child(2n + 1).highlight {
+  background-color: #dfe682;
+}
+
 .chess-board .row:nth-child(2n + 1) .square:nth-child(2n) {
   background-color: rgba(199, 10, 10, 0.781);
+}
+
+.chess-board .row:nth-child(2n + 1) .square:nth-child(2n).highlight {
+  background-color: rgba(199, 186, 10, 0.781);
 }
 /*# sourceMappingURL=style.css.map */

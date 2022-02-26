@@ -6,6 +6,8 @@ $border: 3px solid black;
 $boxSize: 80px;
 $lightSquareColor: rgb(238, 152, 121);
 $darkSquareColor: rgba(199, 10, 10, 0.781);
+$lightHighlightColor: rgb(223, 230, 130);
+$darkHighlightColor: rgba(199, 186, 10, 0.781);
 
 * {
   margin: 0;
@@ -76,18 +78,30 @@ body {
   .row:nth-child(2n) {
     .square:nth-child(2n + 1) {
       background-color: $darkSquareColor;
+      &.highlight {
+        background-color: $darkHighlightColor;
+      }
     }
     .square:nth-child(2n) {
       background-color: $lightSquareColor;
+      &.highlight {
+        background-color: $lightHighlightColor;
+      }
     }
   }
 
   .row:nth-child(2n + 1) {
     .square:nth-child(2n + 1) {
       background-color: $lightSquareColor;
+      &.highlight {
+        background-color: $lightHighlightColor;
+      }
     }
     .square:nth-child(2n) {
       background-color: $darkSquareColor;
+      &.highlight {
+        background-color: $darkHighlightColor;
+      }
     }
   }
 }

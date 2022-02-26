@@ -566,6 +566,7 @@ function dragEnd(e) {
 // TODO: Highlight available moves for the piece
 function onClick(e) {
   const pieceEl = e.currentTarget;
+  if ((pieceEl.getAttribute('color') === WHITE) !== isWhiteTurn) return;
   const idx = pieceIdx(pieceEl);
   const moves = simulateMoves(idx, computeMoves(idx, chessGame), chessGame);
   squares.forEach((square) => square.classList.remove('highlight'));

@@ -2,12 +2,6 @@ const chessBoardEl = document.getElementById('chessBoard');
 const promotionWhiteEl = document.getElementById('promotionWhite');
 const promotionBlackEl = document.getElementById('promotionBlack');
 
-promotionWhiteEl.querySelectorAll('.square').forEach((pieceEl) => {
-  pieceEl.addEventListener('click', (e) => {
-    console.log(e.currentTarget.getAttribute('type'));
-  });
-});
-
 const htmlBoard = [];
 const boardSize = 8; // squares
 const boxSize = 80; // px
@@ -47,6 +41,8 @@ const iconMap = {
   [KING]: KING_HTML,
 };
 
+const startingColor = WHITE;
+
 const queenSideSquares = [getIdx(boardSize - 1, 3), getIdx(0, 3)];
 const kingSideSquares = [getIdx(boardSize - 1, 5), getIdx(0, 5)];
 
@@ -60,14 +56,14 @@ let chessGame;
 
 function startGame() {
   draggedPiece = null;
-  isWhiteTurn = true;
+  isWhiteTurn = WHITE === startingColor;
   isChecking = false;
   blockedQueenSide = false;
   blockedKingSide = false;
   clearBoard();
   placePieces();
 
-  collectPieces(WHITE, chessGame.board).forEach((idx) => {
+  collectPieces(startingColor, chessGame.board).forEach((idx) => {
     const legalMoves = computeMoves(idx, chessGame);
     const [x, y] = getCoor(idx);
     chessGame.board[x][y].moves = simulateMoves(idx, legalMoves, chessGame);
@@ -80,19 +76,25 @@ function movePiece(pieceEl, to) {
   const [x2, y2] = getCoor(to);
   const { board } = chessGame;
   const { color, moves } = board[x1][y1];
-  if ((color === WHITE) !== isWhiteTurn) return;
+  if ((color === WHITE) !== isWhiteTurn || isPromoting) return;
   const move = moves[to];
 
   if (!move) return; // illegal move
 
-  isWhiteTurn = !isWhiteTurn;
   const { chess, capturedPiece, enemyLegalMovesMap, specialMove } = move;
-  chessGame = chess;
 
-  movePieceEl(x2, y2, pieceEl);
   moveSpecial(x2, y2, specialMove);
+  if (isPromoting) {
+    console.log(move);
+    return;
+  }
 
-  console.table(chessGame.board);
+  chessGame = chess;
+  isWhiteTurn = !isWhiteTurn;
+  movePieceEl(x2, y2, pieceEl);
+
+  if (capturedPiece) console.log(capturedPiece);
+  console.table(chess.board);
 
   isChecking = false;
   collectPieces(color, chess.board).forEach((idx) =>
@@ -116,10 +118,10 @@ function movePiece(pieceEl, to) {
   }
 }
 
-function simulateMoves(idx, legalMoves, chess) {
+function simulateMoves(from, legalMoves, chess) {
   const moves = {};
   legalMoves.forEach((to) => {
-    const move = simulateMove(idx, to, chess);
+    const move = simulateMove(from, to, chess);
     if (move) moves[to] = move;
   });
 
@@ -142,14 +144,13 @@ function simulateMove(from, to, chess) {
   if (type === PAWN) {
     if (y1 !== y2 && !capturedPiece) {
       // En passant
-
       const [x, y] = getCoor(enPassant.pawnIdx);
       capturedPiece = board[x][y];
       board[x][y] = null;
       specialMove = { type: EN_PASSANT, pieceIdx: enPassant.pawnIdx };
     } else if (x2 === 0 || x2 === boardSize - 1) {
       // Promotion
-      specialMove = { type: PROMOTION, pieceIdx: to };
+      specialMove = { type: PROMOTION, pieceIdx: from };
     }
   } else if (type === KING) {
     if (y1 - 2 === y2) {
@@ -195,6 +196,32 @@ function simulateMove(from, to, chess) {
   };
 }
 
+function moveSpecial(x2, y2, specialMove) {
+  if (!specialMove) return;
+
+  const { type, pieceIdx } = specialMove;
+  const [x, y] = getCoor(pieceIdx);
+
+  if (type === EN_PASSANT) {
+    htmlBoard[x][y].innerHTML = '';
+  } else if (type === QUEENSIDE_CASTLING) {
+    const rookEl = htmlBoard[x][y].firstChild;
+    movePieceEl(x2, y2 + 1, rookEl);
+  } else if (type === KINGSIDE_CASTLING) {
+    const rookEl = htmlBoard[x][y].firstChild;
+    movePieceEl(x2, y2 - 1, rookEl);
+  } else if (type === PROMOTION) {
+    isPromoting = true;
+    const promotionContainer = isWhiteTurn
+      ? promotionWhiteEl
+      : promotionBlackEl;
+    promotionContainer.setAttribute('from', pieceIdx);
+    promotionContainer.setAttribute('to', getIdx(x2, y2));
+    promotionContainer.style.left = boxSize * y2 - 3 + 'px';
+    promotionContainer.classList.remove('hide');
+  }
+}
+
 function setEnPassant(from, to, board) {
   const [x1, y1] = getCoor(from);
   const [x2, y2] = getCoor(to);
@@ -203,6 +230,22 @@ function setEnPassant(from, to, board) {
   return type === PAWN && y1 === y2 && x1 + dir * 2 === x2
     ? { x: x1 + dir, y: y1, pawnIdx: to }
     : null;
+}
+
+// Promotes the pawn and moves it to the correct position
+function promote(from, to, type) {
+  const [x1, y1] = getCoor(from);
+  const [x2, y2] = getCoor(to);
+  const piece = chessGame.board[x1][y1];
+  const { moves, color } = piece;
+  const move = moves[to]; // The move which promotes the pawn
+
+  move.chess.board[x2][y2].type = type;
+  move.specialMove = null;
+  isPromoting = false;
+  const pieceEl = createPiece(x1, y1, type, color, moves);
+
+  movePiece(pieceEl, to);
 }
 
 // Computes possible legal moves for a chess piece
@@ -409,12 +452,24 @@ function setChecks(x, y, color, target) {
   if (kingSideSquares[squareIdx] === getIdx(x, y)) blockedKingSide = true;
 }
 
-function createPiece(x, y, type, color) {
+function collectPieces(color, board) {
+  const allyPieces = [];
+  for (let i = 0; i < boardSize; i++) {
+    for (let j = 0; j < boardSize; j++) {
+      if (board[i][j]) {
+        if (board[i][j].color === color) allyPieces.push(getIdx(i, j));
+      }
+    }
+  }
+  return allyPieces;
+}
+
+function createPiece(x, y, type, color, moves = null) {
   const piece = {
     type,
     color,
     hasMoved: false,
-    moves: null,
+    moves,
   };
   chessGame.board[x][y] = piece;
 
@@ -428,18 +483,7 @@ function createPiece(x, y, type, color) {
   pieceEl.addEventListener('dragstart', dragStart);
   pieceEl.addEventListener('dragend', dragEnd);
   pieceEl.addEventListener('click', onClick); // for debugging
-}
-
-function collectPieces(color, board) {
-  const allyPieces = [];
-  for (let i = 0; i < boardSize; i++) {
-    for (let j = 0; j < boardSize; j++) {
-      if (board[i][j]) {
-        if (board[i][j].color === color) allyPieces.push(getIdx(i, j));
-      }
-    }
-  }
-  return allyPieces;
+  return pieceEl;
 }
 
 function clearBoard() {
@@ -490,28 +534,6 @@ function movePieceEl(x, y, pieceEl) {
   pieceEl.setAttribute('square', getIdx(x, y));
 }
 
-function moveSpecial(x2, y2, specialMove) {
-  if (!specialMove) return;
-
-  const { type, pieceIdx } = specialMove;
-  const [x, y] = getCoor(pieceIdx);
-
-  if (type === EN_PASSANT) {
-    htmlBoard[x][y].innerHTML = '';
-  } else if (type === QUEENSIDE_CASTLING) {
-    const rookEl = htmlBoard[x][y].firstChild;
-    movePieceEl(x2, y2 + 1, rookEl);
-  } else if (type === KINGSIDE_CASTLING) {
-    const rookEl = htmlBoard[x][y].firstChild;
-    movePieceEl(x2, y2 - 1, rookEl);
-  } else if (type === PROMOTION) {
-    isPromoting = true;
-    const promotionContainer = x === 0 ? promotionWhiteEl : promotionBlackEl;
-    promotionContainer.classList.remove('hide');
-    promotionContainer.style.left = boxSize * y - 3 + 'px';
-  }
-}
-
 function initiliazeGame() {
   for (const row of chessBoardEl.querySelectorAll('.row')) {
     const arr = [];
@@ -534,7 +556,7 @@ function dragEnd(e) {
   draggedPiece = null;
 }
 
-// For debugging purposes, remove later
+// For debugging purposes
 function onClick(e) {
   const pieceEl = e.currentTarget;
   const idx = pieceIdx(pieceEl);
@@ -572,6 +594,24 @@ function printBoard() {
   for (const row of chessGame.board) {
     console.log(row.map((piece) => (piece ? piece.type : 'null')));
   }
+}
+
+addPromotionEventListeners(promotionWhiteEl);
+addPromotionEventListeners(promotionBlackEl);
+
+function addPromotionEventListeners(containerEl) {
+  containerEl.querySelectorAll('.square').forEach((pieceEl) => {
+    pieceEl.addEventListener('click', (e) => {
+      if (!isPromoting) return;
+      const btnEl = e.currentTarget;
+      containerEl.classList.add('hide');
+      promote(
+        containerEl.getAttribute('from'),
+        containerEl.getAttribute('to'),
+        btnEl.getAttribute('type')
+      );
+    });
+  });
 }
 
 function copyChess(chess) {

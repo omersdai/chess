@@ -570,6 +570,7 @@ function onClick(e) {
   const idx = pieceIdx(pieceEl);
   const moves = simulateMoves(idx, computeMoves(idx, chessGame), chessGame);
   squares.forEach((square) => square.classList.remove('highlight'));
+  squares[idx].classList.add('highlight');
   Object.keys(moves).forEach((to) =>
     squares[parseInt(to)].classList.add('highlight')
   );

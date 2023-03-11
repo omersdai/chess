@@ -109,10 +109,12 @@ function movePiece(pieceEl, to) {
   if (capturedPiece) console.log(capturedPiece);
   console.table(chess.board);
 
+  // check if enemy king is checked after the move is made
+  // check all pieces for discovered checks and not just the single piece
   isChecking = false;
   collectPieces(color, chess.board).forEach((idx) =>
     computeMoves(idx, chessGame)
-  ); // check if enemy king is checked
+  );
 
   if (isChecking) console.log("Check!!!");
 

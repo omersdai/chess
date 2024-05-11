@@ -4,6 +4,8 @@
 $primaryColor: steelblue;
 $border: 3px solid black;
 $boxSize: 80px;
+$chessPieceSize: 50px;
+$chessPieceOutlineThickness: 10px;
 $lightSquareColor: rgb(238, 152, 121);
 $darkSquareColor: rgba(199, 10, 10, 0.781);
 $lightHighlightColor: rgb(223, 230, 130);
@@ -32,6 +34,23 @@ body {
   display: flex;
   flex-direction: column;
   // flex-direction: column-reverse;
+
+  .chess-piece{
+    height: $chessPieceSize;
+    width: $chessPieceSize;
+    stroke-width: $chessPieceOutlineThickness;
+  }
+
+  .white {
+    fill: white;
+    stroke: black;
+  }
+
+  .black {
+    fill: black;
+    stroke: white;
+  }
+
   i {
     font-size: 50px;
     background-color: transparent;

@@ -1,5 +1,5 @@
 const chessBoardEl = document.getElementById("chessBoard");
-const squares = chessBoardEl.querySelectorAll(".square");
+const squares = [];
 const promotionWhiteEl = document.getElementById("promotionWhite");
 const promotionBlackEl = document.getElementById("promotionBlack");
 
@@ -26,12 +26,6 @@ const [EN_PASSANT, QUEENSIDE_CASTLING, KINGSIDE_CASTLING, PROMOTION] = [
   "promotion",
 ];
 
-const PAWN_HTML = '<i class="fa-solid fa-chess-pawn" draggable="true"></i>';
-const ROOK_HTML = '<i class="fa-solid fa-chess-rook" draggable="true"></i>';
-const KNIGHT_HTML = '<i class="fa-solid fa-chess-knight" draggable="true"></i>';
-const BISHOP_HTML = '<i class="fa-solid fa-chess-bishop" draggable="true"></i>';
-const QUEEN_HTML = '<i class="fa-solid fa-chess-queen" draggable="true"></i>';
-const KING_HTML = '<i class="fa-solid fa-chess-king" draggable="true"></i>';
 
 const iconMap = {
   [PAWN]: PAWN_HTML,
@@ -261,7 +255,8 @@ function promote(from, to, type) {
   move.specialMove = null;
   isPromoting = false;
   const pieceEl = createPiece(x1, y1, type, color, moves);
-
+  htmlBoard[x1][y1].innerHTML = "";
+  
   movePiece(pieceEl, to);
 }
 
@@ -485,16 +480,22 @@ function createPiece(x, y, type, color, moves = null) {
   };
   chessGame.board[x][y] = piece;
 
-  const square = htmlBoard[x][y];
-  square.innerHTML = iconMap[type];
-  const pieceEl = square.firstChild;
-  pieceEl.style.color = color;
+  
+  const pieceEl = document.createElement('div');
+  pieceEl.innerHTML = iconMap[type];
+  pieceEl.firstChild.classList.add(color);
+
+  pieceEl.setAttribute('draggable', 'true');
   pieceEl.setAttribute("square", getIdx(x, y));
   pieceEl.setAttribute("type", type);
   pieceEl.setAttribute("color", color);
   pieceEl.addEventListener("dragstart", dragStart);
   pieceEl.addEventListener("dragend", dragEnd);
   pieceEl.addEventListener("click", onClick); // highlight legal moves for the piece
+  if(type === PAWN) console.log(pieceEl);
+
+  const square = htmlBoard[x][y];
+  square.appendChild(pieceEl);
   return pieceEl;
 }
 
@@ -553,6 +554,7 @@ function highlightMove(from, to) {
 }
 
 function initiliazeGame() {
+  createHtmlSquares();
   for (const row of chessBoardEl.querySelectorAll(".row")) {
     const arr = [];
     for (const square of row.querySelectorAll(".square")) {
@@ -560,12 +562,27 @@ function initiliazeGame() {
     }
     htmlBoard.push(arr);
   }
+  console.log(htmlBoard);
 
   addSquareEventListeners();
   addPromotionEventListeners(promotionWhiteEl);
   addPromotionEventListeners(promotionBlackEl);
 
   startGame();
+}
+
+function createHtmlSquares(){
+  for(let i = 0; i < boardSize; i++){
+    const row = document.createElement('div');
+    row.className = 'row';
+    for(let j = 0; j < boardSize; j++){
+      const square = document.createElement('div');
+      square.className = 'square';
+      squares.push(square);
+      row.appendChild(square);
+    }
+    chessBoardEl.appendChild(row);
+  }
 }
 
 //////////////////

@@ -5,7 +5,7 @@ $primaryColor: steelblue;
 $border: 3px solid black;
 $boxSize: 80px;
 $chessPieceSize: 50px;
-$chessPieceOutlineThickness: 10px;
+$chessPieceOutlineThickness: 5px;
 $lightSquareColor: rgb(238, 152, 121);
 $darkSquareColor: rgba(199, 10, 10, 0.781);
 $lightHighlightColor: rgb(223, 230, 130);
@@ -39,6 +39,7 @@ body {
     height: $chessPieceSize;
     width: $chessPieceSize;
     stroke-width: $chessPieceOutlineThickness;
+    background-color: transparent;
   }
 
   .white {
@@ -51,11 +52,6 @@ body {
     stroke: white;
   }
 
-  i {
-    font-size: 50px;
-    background-color: transparent;
-    -webkit-text-stroke: 2px black;
-  }
 
   .promotion-container {
     position: absolute;
@@ -69,16 +65,18 @@ body {
       @extend %btn;
     }
 
+
     &.promotion-white {
       top: 0;
       left: $boxSize * 4 - 3px;
-      i {
-        color: white;
-      }
+      fill: white;
+      stroke: black;
     }
 
     &.promotion-black {
       bottom: 0;
+      fill: black;
+      stroke: white;
     }
   }
 

@@ -50,7 +50,7 @@ c14.71,0,13.95-10.08,13.95-10.08S219.6,104.66,204.89,104.66z"
 `;
 
 const ROOK_HTML = `<svg
-class="chess-piece white" 
+class="chess-piece" 
 version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 300 300" style="enable-background:new 0 0 300 300;" xml:space="preserve">
 		<style type="text/css">
@@ -91,7 +91,7 @@ version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/
 `
 
 const KNIGHT_HTML = `<svg 
-		class="chess-piece white"
+		class="chess-piece"
 		version="1.1"
 		xmlns="http://www.w3.org/2000/svg"
 		xmlns:xlink="http://www.w3.org/1999/xlink"

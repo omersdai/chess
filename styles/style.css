@@ -149,7 +149,8 @@ body {
 .chess-board .chess-piece {
   height: 50px;
   width: 50px;
-  stroke-width: 10px;
+  stroke-width: 5px;
+  background-color: transparent;
 }
 .chess-board .white {
   fill: white;
@@ -158,11 +159,6 @@ body {
 .chess-board .black {
   fill: black;
   stroke: white;
-}
-.chess-board i {
-  font-size: 50px;
-  background-color: transparent;
-  -webkit-text-stroke: 2px black;
 }
 .chess-board .promotion-container {
   position: absolute;
@@ -176,12 +172,13 @@ body {
 .chess-board .promotion-container.promotion-white {
   top: 0;
   left: 317px;
-}
-.chess-board .promotion-container.promotion-white i {
-  color: white;
+  fill: white;
+  stroke: black;
 }
 .chess-board .promotion-container.promotion-black {
   bottom: 0;
+  fill: black;
+  stroke: white;
 }
 .chess-board .square {
   height: 80px;
